@@ -1,0 +1,555 @@
+
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>วาดรูปตามเส้น - เกมฝึกทักษะการใช้เมาส์สำหรับเด็ก</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f0f9ff;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 150, 0.1);
+            overflow: hidden;
+        }
+        
+        .drawing-area {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            margin: 0 auto;
+            border: 3px dashed #8bc4ff;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .path {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 20; /* Thicker lines */
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        
+        .path-border {
+            fill: none;
+            stroke: transparent;
+            stroke-width: 40; /* Border around the path */
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            pointer-events: none;
+        }
+        
+        .user-drawing {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+        
+        .eraser {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #ff6b6b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            z-index: 20;
+        }
+        
+        .eraser:hover {
+            transform: scale(1.1);
+        }
+        
+        .eraser:active {
+            transform: scale(0.95);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .celebration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            border-radius: 50%;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #e2e8f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: #4ade80;
+            border-radius: 5px;
+            transition: width 0.5s;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .level-complete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 50;
+            display: none;
+        }
+        
+        .level-failed {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 50;
+            display: none;
+        }
+        
+        .star {
+            display: inline-block;
+            font-size: 40px;
+            color: #ffd700;
+            margin: 0 5px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .warning-flash {
+            animation: warning-flash 0.5s;
+        }
+        
+        @keyframes warning-flash {
+            0% { background-color: rgba(255, 0, 0, 0); }
+            50% { background-color: rgba(255, 0, 0, 0.3); }
+            100% { background-color: rgba(255, 0, 0, 0); }
+        }
+    </style>
+</head>
+<body class="bg-blue-50">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center text-blue-600 mb-2">วาดรูปตามเส้น</h1>
+        <p class="text-xl text-center text-blue-500 mb-6">เกมฝึกทักษะการใช้เมาส์สำหรับนักเรียน ชั้น ป.1-3</p>
+        
+        <div class="game-container">
+            <div class="p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-xl font-bold text-blue-700">ด่านที่: <span id="level-number">1</span>/20</div>
+                    <div class="w-1/2">
+                        <div class="progress-bar">
+                            <div class="progress" id="progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="text-xl font-bold text-green-600">คะแนน: <span id="score">0</span></div>
+                </div>
+            </div>
+            
+            <div class="drawing-area bg-blue-50 mx-auto relative" id="drawing-area">
+                <svg id="path-svg" width="100%" height="100%" class="absolute top-0 left-0">
+                    <!-- Path will be inserted here -->
+                </svg>
+                <canvas id="user-drawing" class="user-drawing"></canvas>
+                <div class="eraser" id="eraser" style="bottom: 20px; right: 20px;">
+                    <span>🧽</span>
+                </div>
+            </div>
+            
+            <div class="p-6 flex justify-between items-center">
+                <div class="text-lg font-semibold text-blue-700" id="instruction">วาดตามเส้นให้ครบทุกจุด อย่าออกนอกเส้น!</div>
+                <div>
+                    <button id="clear-btn" class="btn bg-red-500 text-white mr-2">ล้างใหม่</button>
+                    <button id="check-btn" class="btn bg-green-500 text-white">ตรวจสอบ</button>
+                </div>
+            </div>
+            
+            <div class="celebration" id="celebration"></div>
+            
+            <div class="level-complete" id="level-complete">
+                <h2 class="text-2xl font-bold text-green-600 mb-4">ยอดเยี่ยม! ผ่านด่านแล้ว</h2>
+                <div class="mb-4">
+                    <span class="star">⭐</span>
+                    <span class="star">⭐</span>
+                    <span class="star">⭐</span>
+                </div>
+                <button id="next-level-btn" class="btn bg-blue-500 text-white px-8 py-3">ไปด่านต่อไป</button>
+            </div>
+            
+            <div class="level-failed" id="level-failed">
+                <h2 class="text-2xl font-bold text-red-600 mb-4">ไม่ผ่าน!</h2>
+                <p class="text-lg mb-4">คุณวาดออกนอกเส้นไป ลองแก้ไขและตรวจสอบอีกครั้ง</p>
+                <button id="continue-btn" class="btn bg-blue-500 text-white px-8 py-3">แก้ไขต่อ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('user-drawing');
+        const ctx = canvas.getContext('2d');
+        const pathSvg = document.getElementById('path-svg');
+        const eraser = document.getElementById('eraser');
+        const clearBtn = document.getElementById('clear-btn');
+        const checkBtn = document.getElementById('check-btn');
+        const nextLevelBtn = document.getElementById('next-level-btn');
+        const continueBtn = document.getElementById('continue-btn');
+        const levelComplete = document.getElementById('level-complete');
+        const levelFailed = document.getElementById('level-failed');
+        const celebration = document.getElementById('celebration');
+        const levelNumberEl = document.getElementById('level-number');
+        const scoreEl = document.getElementById('score');
+        const progressBar = document.getElementById('progress-bar');
+        const instruction = document.getElementById('instruction');
+        const drawingArea = document.getElementById('drawing-area');
+        
+        let isDrawing = false;
+        let isErasing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentLevel = 1;
+        let score = 0;
+        let pathCovered = 0;
+        let pathPoints = [];
+        let pathBorderPoints = [];
+        let userDrawnPoints = new Set();
+        let wentOutsidePath = false;
+        
+        // Resize canvas to match parent
+        function resizeCanvas() {
+            const parent = canvas.parentElement;
+            canvas.width = parent.clientWidth;
+            canvas.height = parent.clientHeight;
+            clearCanvas();
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Game levels - shapes to trace
+        const levels = [
+            { name: "วงกลม", path: "M150,200 a100,100 0 1,0 300,0 a100,100 0 1,0 -300,0", emoji: "⭕" },
+            { name: "สี่เหลี่ยม", path: "M150,100 L450,100 L450,300 L150,300 Z", emoji: "🟥" },
+            { name: "สามเหลี่ยม", path: "M300,100 L450,300 L150,300 Z", emoji: "🔺" },
+            { name: "ดาว", path: "M300,50 L340,180 L480,180 L370,260 L410,390 L300,310 L190,390 L230,260 L120,180 L260,180 Z", emoji: "⭐" },
+            { name: "หัวใจ", path: "M300,350 C400,250 500,150 300,100 C100,150 200,250 300,350", emoji: "❤️" },
+            { name: "แอปเปิ้ล", path: "M300,100 C350,100 400,150 400,200 C400,300 300,350 300,350 C300,350 200,300 200,200 C200,150 250,100 300,100 M300,100 L300,50 L330,70", emoji: "🍎" },
+            { name: "กล้วย", path: "M200,300 C250,200 350,150 450,200 C400,250 350,300 300,320 C250,300 220,250 200,300 Z", emoji: "🍌" },
+            { name: "ส้ม", path: "M300,200 a100,100 0 1,0 0.1,0 M300,100 C310,80 330,80 340,60", emoji: "🍊" },
+            { name: "แมว", path: "M250,300 C200,250 200,150 300,150 C400,150 400,250 350,300 Z M250,200 L200,150 M350,200 L400,150 M275,250 L275,270 M325,250 L325,270 M300,270 C280,290 320,290 300,270", emoji: "🐱" },
+            { name: "สุนัข", path: "M250,300 C200,280 200,180 300,180 C400,180 400,280 350,300 Z M250,220 L200,180 M350,220 L400,180 M275,250 L275,270 M325,250 L325,270 M300,280 C280,300 320,300 300,280 M300,180 L300,150 C320,120 280,120 300,150", emoji: "🐶" },
+            { name: "ปลา", path: "M400,200 C350,150 250,150 200,200 C250,250 350,250 400,200 M400,200 L450,230 L400,260 M150,200 a10,10 0 1,0 0.1,0", emoji: "🐟" },
+            { name: "เต่า", path: "M300,200 a80,60 0 1,0 0.1,0 M220,200 L180,170 M380,200 L420,170 M300,260 L300,300 M270,300 L330,300", emoji: "🐢" },
+            { name: "ผีเสื้อ", path: "M300,200 C250,150 200,180 200,220 C200,260 250,280 300,200 C350,280 400,260 400,220 C400,180 350,150 300,200 M300,200 L300,250 M270,270 L330,270", emoji: "🦋" },
+            { name: "ดอกไม้", path: "M300,200 a30,30 0 1,0 0.1,0 M300,170 C300,120 350,120 350,170 M300,230 C300,280 350,280 350,230 M330,200 C380,200 380,250 330,250 M270,200 C220,200 220,250 270,250", emoji: "🌸" },
+            { name: "บ้าน", path: "M200,300 L200,200 L300,100 L400,200 L400,300 Z M280,300 L280,240 L320,240 L320,300 M200,200 L400,200", emoji: "🏠" },
+            { name: "รถยนต์", path: "M150,250 L200,250 L250,200 L350,200 L400,250 L450,250 L450,300 L150,300 Z M200,300 a25,25 0 1,0 0.1,0 M400,300 a25,25 0 1,0 0.1,0", emoji: "🚗" },
+            { name: "เรือ", path: "M150,250 L250,250 L300,200 L350,250 L450,250 L400,300 L200,300 Z M300,200 L300,150", emoji: "⛵" },
+            { name: "เครื่องบิน", path: "M150,250 L450,250 M300,100 L300,300 M200,200 L300,150 L400,200 M250,300 L300,250 L350,300", emoji: "✈️" },
+            { name: "ดวงจันทร์", path: "M300,150 a100,100 0 1,0 0.1,0 M250,150 a50,100 0 1,0 0.1,0", emoji: "🌙" },
+            { name: "ดวงอาทิตย์", path: "M300,200 a80,80 0 1,0 0.1,0 M300,100 L300,120 M380,120 L365,135 M380,200 L400,200 M380,280 L365,265 M300,300 L300,280 M220,280 L235,265 M200,200 L220,200 M220,120 L235,135", emoji: "☀️" }
+        ];
+        
+        // Load level
+        function loadLevel(levelIndex) {
+            clearCanvas();
+            userDrawnPoints = new Set();
+            pathCovered = 0;
+            wentOutsidePath = false;
+            
+            const level = levels[levelIndex - 1];
+            
+            // Clear previous paths
+            while (pathSvg.firstChild) {
+                pathSvg.removeChild(pathSvg.firstChild);
+            }
+            
+            // Create border path element (invisible, for collision detection)
+            const borderPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            borderPath.setAttribute("d", level.path);
+            borderPath.setAttribute("class", "path-border");
+            borderPath.setAttribute("id", "path-border");
+            pathSvg.appendChild(borderPath);
+            
+            // Create visible path element
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", level.path);
+            path.setAttribute("class", "path");
+            path.setAttribute("id", "current-path");
+            pathSvg.appendChild(path);
+            
+            // Update instruction
+            instruction.textContent = `วาดตามเส้น "${level.name}" ${level.emoji} ให้ครบทุกจุด อย่าออกนอกเส้น!`;
+            
+            // Generate path points for checking
+            const svgPath = document.getElementById('current-path');
+            const pathLength = svgPath.getTotalLength();
+            pathPoints = [];
+            
+            for (let i = 0; i <= pathLength; i += 5) {
+                const point = svgPath.getPointAtLength(i);
+                pathPoints.push({ x: point.x, y: point.y });
+            }
+            
+            // Generate border points for collision detection
+            const borderPathEl = document.getElementById('path-border');
+            const borderPathLength = borderPathEl.getTotalLength();
+            pathBorderPoints = [];
+            
+            for (let i = 0; i <= borderPathLength; i += 2) {
+                const point = borderPathEl.getPointAtLength(i);
+                pathBorderPoints.push({ x: point.x, y: point.y });
+            }
+            
+            // Update level number
+            levelNumberEl.textContent = levelIndex;
+            
+            // Update progress bar
+            progressBar.style.width = `${((levelIndex - 1) / levels.length) * 100}%`;
+        }
+        
+        // Clear canvas
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Check if point is inside path border
+        function isPointInsidePath(x, y) {
+            // Check if point is close to any border point
+            for (const point of pathBorderPoints) {
+                const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+                if (distance < 20) { // Half of the border width
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // Start drawing
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+            
+            // Check if starting point is inside path
+            if (!isErasing && !isPointInsidePath(lastX, lastY)) {
+                wentOutsidePath = true;
+                drawingArea.classList.add('warning-flash');
+                setTimeout(() => {
+                    drawingArea.classList.remove('warning-flash');
+                }, 500);
+            }
+        });
+        
+        // Draw
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            
+            const x = e.offsetX;
+            const y = e.offsetY;
+            
+            ctx.lineWidth = isErasing ? 20 : 10; // Slightly thicker drawing line
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            if (isErasing) {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.strokeStyle = 'rgba(255,255,255,1)';
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = '#4299e1';
+                
+                // Check if point is on path
+                for (const point of pathPoints) {
+                    const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+                    if (distance < 20) { // Increased detection radius
+                        userDrawnPoints.add(`${Math.round(point.x)},${Math.round(point.y)}`);
+                    }
+                }
+                
+                // Check if point is outside path border
+                if (!isPointInsidePath(x, y)) {
+                    wentOutsidePath = true;
+                    drawingArea.classList.add('warning-flash');
+                    setTimeout(() => {
+                        drawingArea.classList.remove('warning-flash');
+                    }, 500);
+                }
+            }
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            
+            [lastX, lastY] = [x, y];
+        });
+        
+        // Stop drawing
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+            // Calculate path coverage
+            pathCovered = (userDrawnPoints.size / pathPoints.length) * 100;
+            if (pathCovered > 100) pathCovered = 100;
+        });
+        
+        canvas.addEventListener('mouseout', () => {
+            isDrawing = false;
+        });
+        
+        // Eraser toggle
+        eraser.addEventListener('click', () => {
+            isErasing = !isErasing;
+            eraser.style.backgroundColor = isErasing ? '#4299e1' : '#ff6b6b';
+        });
+        
+        // Clear button
+        clearBtn.addEventListener('click', () => {
+            clearCanvas();
+            userDrawnPoints = new Set();
+            pathCovered = 0;
+            wentOutsidePath = false;
+        });
+        
+        // Check button
+        checkBtn.addEventListener('click', () => {
+            if (wentOutsidePath) {
+                // Failed - went outside the path
+                levelFailed.style.display = 'block';
+            } else if (pathCovered >= 70) {
+                // Success!
+                score += Math.floor(pathCovered);
+                scoreEl.textContent = score;
+                
+                // Show celebration
+                showCelebration();
+                
+                // Show level complete dialog
+                setTimeout(() => {
+                    levelComplete.style.display = 'block';
+                }, 1000);
+            } else {
+                alert(`ลองอีกครั้ง! คุณวาดได้ ${Math.floor(pathCovered)}% ของเส้นทั้งหมด ต้องวาดให้ได้อย่างน้อย 70% และต้องไม่ออกนอกเส้น`);
+            }
+        });
+        
+        // Next level button
+        nextLevelBtn.addEventListener('click', () => {
+            levelComplete.style.display = 'none';
+            
+            if (currentLevel < levels.length) {
+                currentLevel++;
+                loadLevel(currentLevel);
+            } else {
+                // Game completed
+                alert(`ยินดีด้วย! คุณผ่านทุกด่านแล้ว ด้วยคะแนนทั้งหมด ${score} คะแนน`);
+                currentLevel = 1;
+                score = 0;
+                scoreEl.textContent = score;
+                loadLevel(currentLevel);
+            }
+        });
+        
+        // Continue button (for failed attempts)
+        continueBtn.addEventListener('click', () => {
+            levelFailed.style.display = 'none';
+            // We don't clear the canvas here, allowing the user to continue editing
+        });
+        
+        // Show celebration animation
+        function showCelebration() {
+            celebration.style.display = 'block';
+            celebration.innerHTML = '';
+            
+            // Create confetti
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.top = `${Math.random() * 100}%`;
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.transform = `scale(${Math.random() * 2 + 1})`;
+                confetti.style.opacity = Math.random();
+                confetti.style.animation = `float ${Math.random() * 3 + 2}s ease-in-out infinite`;
+                confetti.style.animationDelay = `${Math.random() * 2}s`;
+                celebration.appendChild(confetti);
+            }
+            
+            // Hide celebration after animation
+            setTimeout(() => {
+                celebration.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Start the game
+        loadLevel(currentLevel);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'94be68b901207325',t:'MTc0OTI4MTA1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
